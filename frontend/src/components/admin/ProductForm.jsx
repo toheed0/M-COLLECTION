@@ -16,7 +16,7 @@ const ProductForm = () => {
     sizes: ["M", "S", "L"],
     colors: ["Black"],
     collections: "Default",
-    images: [], // store { file, preview, altText }
+    images: [], // store File objects
     brand: "",
     materials: "",
     gender: "Unisex",
@@ -37,11 +37,7 @@ const ProductForm = () => {
 
   const handleFileChange = (idx, file) => {
     const newImages = [...form.images];
-    newImages[idx] = {
-      file,
-      preview: URL.createObjectURL(file),
-      altText: file.name,
-    };
+    newImages[idx] = file; // store actual File object
     setForm({ ...form, images: newImages });
   };
 
@@ -62,20 +58,30 @@ const ProductForm = () => {
       return;
     }
 
-    // Prepare product data
-    const productData = {
-      ...form,
-      price: Number(form.price),
-      countInStock: Number(form.countInStock),
-      sku: form.sku || "SKU" + Date.now(),
-      images: form.images.map((img) => ({
-        url: img.preview, // For now just using preview
-        altText: img.altText,
-      })),
-    };
-
     try {
-      await dispatch(createProduct(productData)).unwrap();
+      const formData = new FormData();
+      formData.append("name", form.name);
+      formData.append("price", form.price);
+      formData.append("description", form.description);
+      formData.append("category", form.category);
+      formData.append("countInStock", form.countInStock);
+      formData.append("sku", form.sku || "SKU" + Date.now());
+      formData.append("sizes", form.sizes.join(","));
+      formData.append("colors", form.colors.join(","));
+      formData.append("collections", form.collections);
+      formData.append("brand", form.brand);
+      formData.append("materials", form.materials);
+      formData.append("gender", form.gender);
+      formData.append("isFeatured", form.isFeatured);
+      formData.append("isPublished", form.isPublished);
+
+      // Append all image files
+      form.images.forEach((file) => {
+        if (file) formData.append("images", file);
+      });
+
+      // Dispatch createProduct
+      await dispatch(createProduct(formData)).unwrap();
       toast.success("Product created successfully!");
       dispatch(fetchAdminProducts());
 
@@ -106,6 +112,7 @@ const ProductForm = () => {
     <form
       onSubmit={handleSubmit}
       className="p-6 bg-white shadow rounded-xl max-w-2xl mx-auto space-y-4"
+      encType="multipart/form-data"
     >
       <h2 className="text-xl font-bold mb-4 text-gray-700">Add Product</h2>
 
@@ -137,8 +144,8 @@ const ProductForm = () => {
         {form.images.map((img, idx) => (
           <div key={idx} className="flex items-center space-x-2 mb-2">
             <input type="file" accept="image/*" onChange={(e) => handleFileChange(idx, e.target.files[0])} className="border p-2 rounded w-1/2" />
-            {img && img.preview && (
-              <img src={img.preview} alt={img.altText} className="w-20 h-20 object-cover rounded" />
+            {img && (
+              <img src={URL.createObjectURL(img)} alt={img.name} className="w-20 h-20 object-cover rounded" />
             )}
             <button type="button" onClick={() => removeImageField(idx)} className="bg-red-500 text-white px-2 rounded">Remove</button>
           </div>

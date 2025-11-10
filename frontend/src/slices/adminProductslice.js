@@ -4,9 +4,12 @@ import axios from "axios";
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
 // ✅ Get Token Dynamically
-const getAuthHeaders = () => {
+const getAuthHeaders = (isMultipart = false) => {
   const token = localStorage.getItem("userToken");
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  if (isMultipart) headers["Content-Type"] = "multipart/form-data";
+  else headers["Content-Type"] = "application/json";
+  return headers;
 };
 
 // 🧠 Fetch all admin products
@@ -39,16 +42,14 @@ export const fetchProductDetails = createAsyncThunk(
   }
 );
 
-// ➕ Create new product
+// ➕ Create new product (multipart/form-data support)
 export const createProduct = createAsyncThunk(
   "adminProducts/createProduct",
   async (productData, { rejectWithValue }) => {
     try {
-      const res = await axios.post(
-        `${API_URL}/api/admin/products`,
-        productData,
-        { headers: getAuthHeaders() }
-      );
+      const res = await axios.post(`${API_URL}/api/admin/products`, productData, {
+        headers: getAuthHeaders(true),
+      });
       return res.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { message: error.message });
@@ -56,27 +57,15 @@ export const createProduct = createAsyncThunk(
   }
 );
 
-// ✏️ Update product
+// ✏️ Update product (multipart/form-data support if needed)
 export const updateProduct = createAsyncThunk(
   "adminProducts/updateProduct",
-  async ({ id, productData }, { rejectWithValue }) => {
+  async ({ id, productData, isMultipart = false }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("userToken");
-      if (!token) throw new Error("No token found. Login first.");
-
-      const config = {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      };
-
-      const { data } = await axios.put(
-        `${API_URL}/api/admin/products/${id}`,
-        productData,
-        config
-      );
-      return data;
+      const res = await axios.put(`${API_URL}/api/admin/products/${id}`, productData, {
+        headers: getAuthHeaders(isMultipart),
+      });
+      return res.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { message: error.message });
     }
@@ -141,6 +130,7 @@ const adminProductSlice = createSlice({
       // CREATE PRODUCT
       .addCase(createProduct.fulfilled, (state, action) => {
         state.products.push(action.payload);
+        state.selectProduct = action.payload;
       })
 
       // UPDATE PRODUCT
