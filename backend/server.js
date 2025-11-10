@@ -3,27 +3,16 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 
-const userRoutes = require('./routes/userRoutes');
-const productRoutes = require('./routes/productRoutes');
-const cartRoutes = require('./routes/cartRoutes');
-const checkoutRoutes = require('./routes/checkoutRoutes');
-const orderRoutes = require('./routes/orderRoutes');
-const uploadRoutes = require('./routes/uploadRoutes');
-const subscriberRoutes = require('./routes/subscriberRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-const productAdminRoutes = require('./routes/productAdminRoutes');
-const adminOrderRoutes = require('./routes/adminOrderRoutes');
-
 dotenv.config();
 
 const app = express();
 
-// ✅ Connect MongoDB
+// ✅ Connect MongoDB (serverless-friendly)
 connectDB();
 
 // ✅ Middleware
 app.use(cors({
-    origin: 'http://localhost:5173', // Update to frontend domain in production
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173', // use env in production
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -31,16 +20,16 @@ app.use(cors({
 app.use(express.json());
 
 // ✅ Routes
-app.use('/api/users', userRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/cart', cartRoutes);
-app.use('/api/checkout', checkoutRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api', subscriberRoutes);
-app.use('/api/admin/users', adminRoutes);
-app.use('/api/admin/products', productAdminRoutes);
-app.use('/api/admin/orders', adminOrderRoutes);
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/products', require('./routes/productRoutes'));
+app.use('/api/cart', require('./routes/cartRoutes'));
+app.use('/api/checkout', require('./routes/checkoutRoutes'));
+app.use('/api/orders', require('./routes/orderRoutes'));
+app.use('/api/upload', require('./routes/uploadRoutes'));
+app.use('/api', require('./routes/subscriberRoutes'));
+app.use('/api/admin/users', require('./routes/adminRoutes'));
+app.use('/api/admin/products', require('./routes/productAdminRoutes'));
+app.use('/api/admin/orders', require('./routes/adminOrderRoutes'));
 app.use("/api/payment", require("./routes/paymentRoute"));
 
 // ✅ Root route
@@ -51,7 +40,7 @@ app.get('/', (req, res) => {
 // ✅ Export app for Vercel serverless
 module.exports = app;
 
-// ✅ Optional: local dev only
+// ✅ Local dev only
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
