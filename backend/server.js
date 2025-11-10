@@ -1,10 +1,8 @@
-// server.js
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 
-// Routes
 const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cartRoutes');
@@ -15,23 +13,24 @@ const subscriberRoutes = require('./routes/subscriberRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const productAdminRoutes = require('./routes/productAdminRoutes');
 const adminOrderRoutes = require('./routes/adminOrderRoutes');
-const paymentRoute = require('./routes/paymentRoute');
 
 dotenv.config();
-connectDB();
 
 const app = express();
 
-// ----------------- MIDDLEWARE -----------------
+// ✅ Connect MongoDB
+connectDB();
+
+// ✅ Middleware
 app.use(cors({
-  origin: '*', // Vercel frontend deploy ke liye
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+    origin: 'http://localhost:5173', // Update to frontend domain in production
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
 
-// ----------------- ROUTES -----------------
+// ✅ Routes
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
@@ -42,12 +41,20 @@ app.use('/api', subscriberRoutes);
 app.use('/api/admin/users', adminRoutes);
 app.use('/api/admin/products', productAdminRoutes);
 app.use('/api/admin/orders', adminOrderRoutes);
-app.use("/api/payment", paymentRoute);
+app.use("/api/payment", require("./routes/paymentRoute"));
 
-// Test root route
+// ✅ Root route
 app.get('/', (req, res) => {
-  res.send('Hello from backend server!');
+    res.send('Hello from the backend server!');
 });
 
-// ----------------- SERVERLESS EXPORT -----------------
+// ✅ Export app for Vercel serverless
 module.exports = app;
+
+// ✅ Optional: local dev only
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+    });
+}
