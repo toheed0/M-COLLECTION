@@ -12,7 +12,7 @@ connectDB();
 
 // ✅ Middleware
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173', // use env in production
+    origin: process.env.FRONTEND_URL || 'https://m-collection-59js.vercel.app', // use env in production
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
