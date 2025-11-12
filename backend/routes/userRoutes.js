@@ -24,6 +24,7 @@ router.post('/register', async (req, res) => {
         jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '30d' }, (err, token) => {
             if (err) throw err;
             res.status(201).json({ 
+                message:"User registered successfully",
                user:{ id: user._id,
                 name: user.name,
                 email: user.email,

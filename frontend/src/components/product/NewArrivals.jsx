@@ -73,7 +73,7 @@ const NewArrivals = () => {
       </div>
 
       {/* ✅ Scrollable Product Slider */}
-      <div className="hidden md:relative">
+      <div className="hidden md:block relative">
         {/* Scroll buttons over images */}
         <div className="absolute inset-x-0 top-[45%] flex justify-between px-4 sm:px-10 z-20 pointer-events-none">
           <button
