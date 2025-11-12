@@ -49,11 +49,11 @@ router.post('/login', async (req, res) => {
     try{
         const user = await User.findOne({email})
         if(!user){
-            return  res.status(400).json({message:'Invalid credentials'});
+            return  res.status(400).json({message:'Invalid Email'});
         }
         const isMatch = await user.matchPassword(password);
         if(!isMatch){
-            return res.status(400).json({message:'Invalid credentials'});
+            return res.status(400).json({message:'Invalid Password'});
         }
         const payload = { user: { id: user._id, role: user.role } };
         jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '30d' }, (err, token) => {
