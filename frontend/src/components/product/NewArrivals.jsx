@@ -75,7 +75,7 @@ const NewArrivals = () => {
       {/* ✅ Scrollable Product Slider */}
       <div className="relative">
         {/* Scroll buttons over images */}
-        <div className="hidden absolute inset-x-0 top-[45%] lg:flex justify-between px-4 sm:px-10 z-20 pointer-events-none">
+        <div className=" absolute inset-x-0 top-[45%] flex justify-between px-4 sm:px-10 z-20 pointer-events-none">
           <button
             onClick={scrollLeftFn}
             disabled={!canScrollLeft}
