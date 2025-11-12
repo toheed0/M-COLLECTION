@@ -1,43 +1,55 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import login from "../assets/login.webp";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import {loginUser} from '../slices/authSlice';
+import { loginUser } from '../slices/authSlice';
 import { useDispatch, useSelector } from "react-redux";
-import { useEffect } from "react";
 import { mergeCart } from "../slices/cartSlice";
+import { toast, ToastContainer } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 
 export const Login = () => {
-    const[email, setEmail]=useState("");
-    const[password, setPassword]=useState("");
-    const navigation=useNavigate();
-    const location=useLocation();
-    const {user,guestId}=useSelector((state)=>state.auth);
-    const {cart}=useSelector((state)=>state.cart);
-    const dispatch=useDispatch();
-    const redirect=new URLSearchParams(location.search).get("redirect")||"/";
-    const isCheckoutRedirect=redirect.includes("checkout");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const navigation = useNavigate();
+  const location = useLocation();
+  const { user, guestId, error } = useSelector((state) => state.auth);
+  const { cart } = useSelector((state) => state.cart);
+  const dispatch = useDispatch();
+  const redirect = new URLSearchParams(location.search).get("redirect") || "/";
+  const isCheckoutRedirect = redirect.includes("checkout");
 
-    useEffect(()=>{
-      if(user){
-        if(cart?.products.length>0 && guestId){
-          dispatch(mergeCart({guestId,user})).then(()=>{
-            navigation(isCheckoutRedirect?"/checkout":"/");
-          });
-        }else{
-           navigation(isCheckoutRedirect?"/checkout":"/");
-        }
+  useEffect(() => {
+    if (user) {
+      if (cart?.products.length > 0 && guestId) {
+        dispatch(mergeCart({ guestId, user })).then(() => {
+          navigation(isCheckoutRedirect ? "/checkout" : "/");
+        });
+      } else {
+        navigation(isCheckoutRedirect ? "/checkout" : "/");
       }
-    },[user,guestId,cart,navigation,isCheckoutRedirect,dispatch]);
-
-
-
-
-     const handleSubmit = (e) => {
-        e.preventDefault();
-        dispatch(loginUser({email,password}));
     }
+  }, [user, guestId, cart, navigation, isCheckoutRedirect, dispatch]);
+
+  // Show error toaster if login fails
+  useEffect(() => {
+    if (error) {
+      toast.error(error, {
+        position: "top-right",
+        autoClose: 3000,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
+  }, [error]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    dispatch(loginUser({ email, password }));
+  };
+
   return (
     <div className="min-h-screen flex">
+      <ToastContainer />
       {/* Left side - Login Form */}
       <div className="flex-1 flex flex-col justify-center px-10 lg:px-20 bg-white">
         <div className="max-w-md w-full mx-auto">
@@ -54,8 +66,9 @@ export const Login = () => {
                 Email Address
               </label>
               <input
-                type={email}
-                onChange={(e)=>setEmail(e.target.value)}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="example@email.com"
                 className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-black"
               />
@@ -66,12 +79,14 @@ export const Login = () => {
                 Password
               </label>
               <input
-                type={password}
-                onChange={(e)=>setPassword(e.target.value)}
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="********"
                 className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
+
             <button
               type="submit"
               className="w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-900 transition-all duration-300"
@@ -81,7 +96,10 @@ export const Login = () => {
 
             <p className="text-center text-gray-500 text-sm mt-5">
               Don’t have an account?{" "}
-              <Link to={`/register?redirect=${encodeURIComponent(redirect)}`} className="text-black font-semibold hover:underline">
+              <Link
+                to={`/register?redirect=${encodeURIComponent(redirect)}`}
+                className="text-black font-semibold hover:underline"
+              >
                 Sign up
               </Link>
             </p>
@@ -92,8 +110,7 @@ export const Login = () => {
       {/* Right side - Image */}
       <div className="hidden lg:flex flex-1 relative">
         <img
-          src=
-          {login}
+          src={login}
           alt="Login Illustration"
           className="w-full h-screen object-cover"
         />
@@ -101,8 +118,7 @@ export const Login = () => {
         <div className="absolute bottom-10 left-10 text-white">
           <h2 className="text-3xl font-bold">Shop Smarter, Live Better</h2>
           <p className="text-gray-200 mt-2 max-w-sm">
-            Discover premium fashion and lifestyle essentials tailored just for
-            you.
+            Discover premium fashion and lifestyle essentials tailored just for you.
           </p>
         </div>
       </div>
