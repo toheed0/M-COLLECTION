@@ -73,13 +73,13 @@ const NewArrivals = () => {
       </div>
 
       {/* ✅ Scrollable Product Slider */}
-      <div className="hidden md:block relative">
+      <div className="relative">
         {/* Scroll buttons over images */}
-        <div className="absolute inset-x-0 top-[45%] flex justify-between px-4 sm:px-10 z-20 pointer-events-none">
+        <div className="hidden absolute inset-x-0 top-[45%] lg:flex justify-between px-4 sm:px-10 z-20 pointer-events-none">
           <button
             onClick={scrollLeftFn}
             disabled={!canScrollLeft}
-            className={`p-3 sm:p-4 rounded-full border border-gray-500 backdrop-blur-md bg-white/10 pointer-events-auto transition ${
+            className={` p-3 sm:p-4 rounded-full border border-gray-500 backdrop-blur-md bg-white/10 pointer-events-auto transition ${
               canScrollLeft
                 ? "hover:bg-white/20 text-white"
                 : "opacity-40 cursor-not-allowed"
