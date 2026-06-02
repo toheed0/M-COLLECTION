@@ -47,6 +47,12 @@ router.post(
   upload.single("image"),
   async (req, res) => {
     try {
+      if (!process.env.GROQ_API_KEY) {
+        return res.status(500).json({
+          message: "GROQ_API_KEY missing (set it in backend environment variables)",
+        });
+      }
+
       if (!req.file) {
         return res.status(400).json({ message: "Koi image nahi mili" });
       }
@@ -55,22 +61,17 @@ router.post(
       const base64Image = req.file.buffer.toString("base64");
       const mediaType = req.file.mimetype; // e.g. "image/jpeg"
 
-      // Claude Vision ko call karein
-      const response = await client.messages.create({
+      const imageDataUrl = `data:${mediaType};base64,${base64Image}`;
+
+      // Groq Vision (OpenAI-compatible chat format)
+      const completion = await client.chat.completions.create({
         model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        temperature: 0.2,
         max_tokens: 500,
         messages: [
           {
             role: "user",
             content: [
-              {
-                type: "image",
-                source: {
-                  type: "base64",
-                  media_type: mediaType,
-                  data: base64Image,
-                },
-              },
               {
                 type: "text",
                 text: `Yeh ek ecommerce product ki image hai. Is image ko dekh kar:
@@ -83,13 +84,19 @@ Sirf JSON format mein jawab do, koi extra text nahi:
   "description": "Product ki description yahan"
 }`,
               },
+              {
+                type: "image_url",
+                image_url: { url: imageDataUrl },
+              },
             ],
           },
         ],
       });
 
-      // Claude ka response parse karein
-      const rawText = response.content[0].text.trim();
+      const rawText = (completion.choices?.[0]?.message?.content || "").trim();
+      if (!rawText) {
+        return res.status(500).json({ message: "AI se empty response mila" });
+      }
 
       // JSON extract karein (agar Claude ne extra text diya toh bhi kaam kare)
       const jsonMatch = rawText.match(/\{[\s\S]*\}/);
@@ -114,19 +121,17 @@ Sirf JSON format mein jawab do, koi extra text nahi:
     } catch (error) {
       console.error("❌ AI Generate Error:", error);
 
-      // Anthropic specific errors
-      if (error.status === 401) {
-        return res
-          .status(500)
-          .json({ message: "Anthropic API key invalid hai" });
+      const status = error?.status || error?.response?.status;
+      if (status === 401) {
+        return res.status(401).json({ message: "Groq API unauthorized (check GROQ_API_KEY)" });
       }
-      if (error.status === 429) {
-        return res
-          .status(429)
-          .json({ message: "AI rate limit ho gaya, thodi der baad try karein" });
+      if (status === 429) {
+        return res.status(429).json({ message: "AI rate limit (try again later)" });
       }
 
-      return res.status(500).json({ message: error.message || "AI generation fail hua" });
+      return res.status(500).json({
+        message: error?.message || "AI generation fail hua",
+      });
     }
   }
 );
