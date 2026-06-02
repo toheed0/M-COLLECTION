@@ -4,7 +4,7 @@ import { FaInstagram, FaSquareXTwitter } from "react-icons/fa6";
 
 const Topbar = () => {
   return (
-    <div className="bg-gradient-to-r z-50 from-black via-gray-900 to-black text-gray-100 shadow-md border-b border-gray-800">
+    <div className="bg-gradient-to-r  from-black via-gray-900 to-black text-gray-100 shadow-md border-b border-gray-800">
       <div className="container mx-auto flex justify-between items-center py-2 px-4 text-xs md:text-sm tracking-wide font-medium">
         {/* LEFT - SOCIAL ICONS */}
         <div className="hidden md:flex items-center space-x-4">

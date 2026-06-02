@@ -1,8 +1,139 @@
+// ============================================================
+// AI GENERATE ROUTE - Apni existing productRoutes.js mein
+// router.post("/") se PEHLE yeh route add karein
+// ============================================================
+//
+// Required packages install karein:
+//   npm install @anthropic-ai/sdk multer
+//
+// .env mein add karein:
+//   ANTHROPIC_API_KEY=your_api_key_here
+//
+// ============================================================
+
 const express = require("express");
+const multer = require("multer");
+const Groq = require("groq-sdk");
 const Product = require("../models/product");
 const { protect, admin } = require("../midleware/authMidleware");
 
 const router = express.Router();
+
+// Multer — sirf memory mein rakhein (disk pe save nahi)
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // max 5MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Sirf image files allowed hain"), false);
+    }
+  },
+});
+
+// Groq client
+const client = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
+
+// ✅ POST /api/products/ai-generate
+// Image se product title + description generate karta hai
+router.post(
+  "/ai-generate",
+  protect,
+  admin,
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Koi image nahi mili" });
+      }
+
+      // Image ko base64 mein convert karein
+      const base64Image = req.file.buffer.toString("base64");
+      const mediaType = req.file.mimetype; // e.g. "image/jpeg"
+
+      // Claude Vision ko call karein
+      const response = await client.messages.create({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        max_tokens: 500,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: mediaType,
+                  data: base64Image,
+                },
+              },
+              {
+                type: "text",
+                text: `Yeh ek ecommerce product ki image hai. Is image ko dekh kar:
+1. Ek catchy aur SEO-friendly product NAME likho (max 60 characters)
+2. Ek compelling product DESCRIPTION likho (2-3 sentences, max 200 characters)
+
+Sirf JSON format mein jawab do, koi extra text nahi:
+{
+  "name": "Product ka naam yahan",
+  "description": "Product ki description yahan"
+}`,
+              },
+            ],
+          },
+        ],
+      });
+
+      // Claude ka response parse karein
+      const rawText = response.content[0].text.trim();
+
+      // JSON extract karein (agar Claude ne extra text diya toh bhi kaam kare)
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        return res
+          .status(500)
+          .json({ message: "AI se valid response nahi mila" });
+      }
+
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      if (!parsed.name || !parsed.description) {
+        return res
+          .status(500)
+          .json({ message: "AI response mein name ya description nahi" });
+      }
+
+      return res.status(200).json({
+        name: parsed.name,
+        description: parsed.description,
+      });
+    } catch (error) {
+      console.error("❌ AI Generate Error:", error);
+
+      // Anthropic specific errors
+      if (error.status === 401) {
+        return res
+          .status(500)
+          .json({ message: "Anthropic API key invalid hai" });
+      }
+      if (error.status === 429) {
+        return res
+          .status(429)
+          .json({ message: "AI rate limit ho gaya, thodi der baad try karein" });
+      }
+
+      return res.status(500).json({ message: error.message || "AI generation fail hua" });
+    }
+  }
+);
+
+// ============================================================
+// BAAKI SAARE ROUTES NEECHE COPY KAREIN (unchanged)
+// ============================================================
 
 // ✅ POST - Create Product
 router.post("/", protect, admin, async (req, res) => {
@@ -88,7 +219,7 @@ router.get("/new-arrivals", async (req, res) => {
   }
 });
 
-// ✅ Similar Products (🟢 Move this ABOVE /:id)
+// ✅ Similar Products
 router.get("/similar/:id", async (req, res) => {
   const { id } = req.params;
   try {
@@ -128,12 +259,12 @@ router.get("/", async (req, res) => {
 
     let query = {};
 
-    if (collections && collections.toLowerCase() !== "all") query.collections = { $regex: collections, $options: "i" };
+    if (collections && collections.toLowerCase() !== "all")
+      query.collections = { $regex: collections, $options: "i" };
 
-if (category && category.toLowerCase() !== "all") {
-  // ignore exact match, use partial and case-insensitive
-  query.category = { $regex: category.replace("-", " "), $options: "i" };
-}
+    if (category && category.toLowerCase() !== "all") {
+      query.category = { $regex: category.replace("-", " "), $options: "i" };
+    }
     if (materials) query.materials = { $in: materials.split(",") };
     if (brand) query.brand = { $in: brand.split(",") };
     if (size) query.sizes = { $in: size.split(",") };
@@ -170,10 +301,9 @@ if (category && category.toLowerCase() !== "all") {
       }
     }
 
-    console.log("🟢 Query received:", query);
-    const products = await Product.find(query).sort(sort).limit(Number(limit) || 0);
-    console.log("🟢 Products found:", products.length);
-
+    const products = await Product.find(query)
+      .sort(sort)
+      .limit(Number(limit) || 0);
     res.json(products);
   } catch (error) {
     console.error("❌ Error in products route:", error);
@@ -196,53 +326,10 @@ router.get("/:id", async (req, res) => {
 // ✅ PUT Update Product
 router.put("/:id", protect, admin, async (req, res) => {
   try {
-    const {
-      name,
-      description,
-      price,
-      discountPrice,
-      countInStock,
-      category,
-      brand,
-      sizes,
-      colors,
-      collections,
-      materials,
-      gender,
-      images,
-      isFeatured,
-      isPublished,
-      tag,
-      dimenisions,
-      weigth,
-      sku,
-    } = req.body;
-
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
-    Object.assign(product, {
-      name,
-      description,
-      price,
-      discountPrice,
-      countInStock,
-      category,
-      brand,
-      sizes,
-      colors,
-      collections,
-      materials,
-      gender,
-      images,
-      isFeatured,
-      isPublished,
-      tag,
-      dimenisions,
-      weigth,
-      sku,
-    });
-
+    Object.assign(product, req.body);
     const updatedProduct = await product.save();
     res.status(200).json(updatedProduct);
   } catch (error) {
