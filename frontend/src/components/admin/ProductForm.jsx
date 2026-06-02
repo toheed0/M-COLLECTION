@@ -66,7 +66,10 @@ const ProductForm = () => {
       const formData = new FormData();
       formData.append("image", firstImage);
 
-      const token = localStorage.getItem("usertoken");
+      const token = localStorage.getItem("userToken");
+      if (!token) {
+        throw new Error("Login required (token missing)");
+      }
       const res = await fetch(`${API_URL}/api/products/ai-generate`, {
         method: "POST",
         headers: {
