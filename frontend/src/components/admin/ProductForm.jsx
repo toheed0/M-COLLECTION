@@ -344,7 +344,7 @@ const ProductForm = () => {
                   Generating...
                 </>
               ) : (
-                <>✨ AI se Title &amp; Description Generate Karein</>
+                <>✨  Generate Title & Description with AI</>
               )}
             </button>
           )}
