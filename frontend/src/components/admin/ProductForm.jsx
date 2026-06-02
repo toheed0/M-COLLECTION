@@ -7,6 +7,8 @@ const ProductForm = () => {
   const dispatch = useDispatch();
   const [aiLoading, setAiLoading] = useState(false);
 
+  const API_URL = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/$/, "");
+
   const [form, setForm] = useState({
     name: "",
     price: "",
@@ -65,7 +67,7 @@ const ProductForm = () => {
       formData.append("image", firstImage);
 
       const token = localStorage.getItem("usertoken");
-      const res = await fetch("/api/products/ai-generate", {
+      const res = await fetch(`${API_URL}/api/products/ai-generate`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
