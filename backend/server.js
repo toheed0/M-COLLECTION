@@ -11,8 +11,16 @@ const app = express();
 connectDB();
 
 // ✅ Middleware
+const allowedOrigins = [
+    'http://localhost:5173',
+    'https://m-collection-59js.vercel.app',
+    'https://m-collection.vercel.app',
+];
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'https://m-collection-59js.vercel.app', // use env in production
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
