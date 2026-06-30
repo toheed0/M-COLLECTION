@@ -39,6 +39,7 @@ app.use('/api/admin/users', require('./routes/adminRoutes'));
 app.use('/api/admin/products', require('./routes/productAdminRoutes'));
 app.use('/api/admin/orders', require('./routes/adminOrderRoutes'));
 app.use("/api/payment", require("./routes/paymentRoute"));
+app.use("/api/agent", require("./routes/agentRoutes"));
 
 // ✅ Root route
 app.get('/', (req, res) => {
